@@ -1,0 +1,36 @@
+# https://hub.docker.com/_/r-base?tab=description
+FROM r-base:latest
+MAINTAINER xuwy
+
+ENV R_REPOS https://cloud.r-project.org/
+
+#-----------------------
+# Install pandoc
+RUN apt-get update \
+    && wget https://github.com/jgm/pandoc/releases/download/2.9.1.1/pandoc-2.9.1.1-linux-amd64.tar.gz \
+    && tar -xvf pandoc-2.9.1.1-linux-amd64.tar.gz -C /root/ \
+    && rm -rf /usr/bin/pandoc  \
+    && ln -s /root/pandoc-2.9.1.1/bin/pandoc /usr/bin/pandoc  \
+    && rm -rf pandoc-2.9.1.1-linux-amd64.tar.gz
+
+# Fonts
+COPY dockerSrc/Fonts /usr/share/fonts/chinese/
+
+#-----------------------
+# Install tinytex
+RUN apt-get update  \
+    && mkdir -p /usr/share/fonts/chinese \
+    && apt-get install -y libcurl4-openssl-dev libssl-dev libfreetype6-dev ghostscript libxml2-dev libsodium-dev \
+    # Install R pkgs
+    && R -e "install.packages(c('rmarkdown', 'tinytex', 'dplyr', 'plotly', 'lubridate', 'DT', 'ggplot2', 'forecast', 'yaml', 'jsonlite', 'log4r', 'plumber', 'uuid', 'future', 'data.table', 'flexdashboard', 'imputeTS', 'influxdbr', 'anomalize', 'purrr', 'tidyr', 'htmltools', 'crosstalk', 'rticles', 'extrafont', 'showtext', 'devtools', 'sodium'), repos = '$R_REPOS')" \
+    && R -e "devtools::install_github('trestletech/plumber', upgrade = 'never')"
+    
+## Configure default locale, see https://github.com/rocker-org/rocker/issues/19
+RUN echo "zh_CN.UTF-8 UTF-8" >> /etc/locale.gen \
+	&& locale-gen zh_CN.utf8 \
+	&& /usr/sbin/update-locale LANG=zh_CN.UTF-8
+
+ENV LC_ALL zh_CN.UTF-8
+ENV LANG zh_CN.UTF-8
+
+CMD ["R"]

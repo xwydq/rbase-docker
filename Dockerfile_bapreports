@@ -1,0 +1,82 @@
+FROM centos:centos7
+LABEL maintainer="xuwy <xuwy@isyscore.com>"
+
+RUN yum -y update && \
+    yum -y install \
+    fontconfig \
+    perl-Digest-MD5 \
+    sudo \
+    vim \
+    wget && \
+    yum clean all
+
+# Install TinyTeX
+RUN wget -qO- "https://yihui.name/gh/tinytex/tools/install-unx.sh" | sh -s - --admin --no-path && \
+    mv ~/.TinyTeX /opt/TinyTeX && \
+    /opt/TinyTeX/bin/*/tlmgr path add
+
+# Install pandoc
+RUN mkdir -p /opt/pandoc && \
+    wget -O /opt/pandoc/pandoc.gz https://files.r-hub.io/pandoc/linux-64/pandoc.gz && \
+    gzip -d /opt/pandoc/pandoc.gz && \
+    chmod +x /opt/pandoc/pandoc && \
+    ln -s /opt/pandoc/pandoc /usr/bin/pandoc && \
+    wget -O /opt/pandoc/pandoc-citeproc.gz https://files.r-hub.io/pandoc/linux-64/pandoc-citeproc.gz && \
+    gzip -d /opt/pandoc/pandoc-citeproc.gz && \
+    chmod +x /opt/pandoc/pandoc-citeproc && \
+    ln -s /opt/pandoc/pandoc-citeproc /usr/bin/pandoc-citeproc
+    
+# Set default locale
+# Fonts
+COPY dockerSrc/Fonts /usr/share/fonts/chinese/
+
+RUN yum install -y mkfontscale mkfontdir fontconfig  \
+    && mkfontscale \
+    && mkfontdir \
+    && fc-cache -fv 
+
+# Install R
+ARG R_VERSION=4.0.0
+ARG OS_IDENTIFIER=centos-7
+
+# Install R
+RUN wget https://cdn.rstudio.com/r/${OS_IDENTIFIER}/pkgs/R-${R_VERSION}-1-1.x86_64.rpm && \
+    yum -y install epel-release && \
+    yum -y install ./R-${R_VERSION}-1-1.x86_64.rpm && \
+    ln -s /opt/R/${R_VERSION}/bin/R /usr/bin/R && \
+    ln -s /opt/R/${R_VERSION}/bin/Rscript /usr/bin/Rscript && \
+    ln -s /opt/R/${R_VERSION}/lib/R /usr/lib/R && \
+    rm R-${R_VERSION}-1-1.x86_64.rpm && \
+    yum -y remove epel-release && \
+    yum clean all
+    
+# render cn pdf
+COPY dockerSrc/rmd_pdf_cn.Rmd /rmd_pdf_cn.Rmd
+
+ENV R_REPOS https://cloud.r-project.org/
+
+RUN set -ex \
+    && yum -y install epel-release \
+    && yum update -y \
+    && rm -rf /tmp/* \
+    && rm -rf /var/cache/yum/* \
+    && yum clean all -y \
+    && localedef -c -f UTF-8 -i zh_CN zh_CN.UTF-8 \
+    && ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime \
+    && yum install -y openssl-devel mysql-devel libpng-devel freetype-devel libsodium-devel xml2 libxml2-devel curl curl-devel libjpeg-devel bzip2 libffi-devel zlib-devel bzip2-devel
+
+RUN R -e "install.packages(c('rmarkdown', 'tinytex', 'dplyr', 'plotly', 'lubridate', 'DT', 'ggplot2', 'forecast', 'yaml', 'jsonlite', 'log4r', 'plumber', 'uuid', 'future', 'data.table', 'flexdashboard', 'purrr', 'tidyr', 'htmltools', 'crosstalk', 'rticles', 'extrafont', 'showtext', 'devtools', 'sodium', 'jiebaR', 'RMySQL', 'pool', 'tidyverse', 'webshot', 'ggwordcloud', 'servr', 'RCurl'), repos = '$R_REPOS')" \
+    && R -e "devtools::install_github('trestletech/plumber', upgrade = 'never')" \
+    && R -e "devtools::install_github('gaospecial/wordcloud2', upgrade = 'never')" \
+    && R -e "devtools::install_github('lchiffon/REmap', upgrade = 'never')" \
+    && R -e "webshot::install_phantomjs()" \
+    && R -e "rmarkdown::render('/rmd_pdf_cn.Rmd')"
+
+ENV LANG=zh_CN.UTF-8 \
+    LANGUAGE=zh_CN:zh \
+    LC_ALL=zh_CN.UTF-8
+
+# Set default timezone
+ENV TZ UTC
+
+CMD ["R"]
