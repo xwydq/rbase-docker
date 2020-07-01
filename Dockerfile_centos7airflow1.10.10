@@ -7,6 +7,7 @@ FROM centos:7
 MAINTAINER xuwy
 
 ARG PIP_VERSION="19.0.2"
+ENV AIRFLOW_HOME=/home/airflow
 
 COPY dockerSrc/oracle-instantclient12.1 /oracle-instantclient12.1
 
@@ -65,7 +66,9 @@ RUN set -ex \
     && echo 'trusted-host=mirrors.aliyun.com' >> ~/.pip/pip.conf \
     && cd / \
     && rm -rf /Python-3.7.0.tgz \
-    && rm -rf /oracle-instantclient12.1
+    && rm -rf /oracle-instantclient12.1  \
+    # 安装airflow
+    && pip install apache-airflow[async,mysql,postgres,oracle,redis,ssh,statsd,virtualenv]==1.10.10 --constraint https://raw.githubusercontent.com/apache/airflow/1.10.10/requirements/requirements-python3.7.txt
 
 ENV LC_ALL zh_CN.UTF-8
 
