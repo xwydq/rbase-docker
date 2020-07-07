@@ -61,8 +61,10 @@ RUN set -ex \
     && rm -rf /Python-3.7.0.tgz \
     && rm -rf /oracle-instantclient12.1  \
     # 安装airflow
-    && pip install apache-airflow[async,mysql,postgres,oracle,redis,ssh,statsd,virtualenv]==1.10.10 --constraint https://raw.githubusercontent.com/apache/airflow/1.10.10/requirements/requirements-python3.7.txt
-
+    && pip install apache-airflow[async,mysql,postgres,oracle,redis,ssh,statsd,virtualenv]==1.10.10 --constraint https://raw.githubusercontent.com/apache/airflow/1.10.10/requirements/requirements-python3.7.txt \
+    && pip install flask_bcrypt \
+    && pip install pymssql
+    
 ENV LC_ALL zh_CN.UTF-8
 
 CMD ["python"]
