@@ -14,7 +14,7 @@ COPY dockerSrc/oracle-instantclient12.1 /oracle-instantclient12.1
 RUN set -ex \
     # 预安装所需组件
     && yum install -y wget tar libffi-devel zlib-devel bzip2-devel openssl-devel ncurses-devel sqlite-devel readline-devel tk-devel gcc make initscripts \
-    && yum install -y mysql-devel postgresql-devel libsasl2-devel openldap-devel gcc-c++ libaio \
+    && yum install -y mysql mysql-devel postgresql-devel libsasl2-devel openldap-devel gcc-c++ libaio \
     # 安装Python-3.7.0
     && wget https://www.python.org/ftp/python/3.7.0/Python-3.7.0.tgz \
     && tar -zxvf Python-3.7.0.tgz \
